@@ -6,7 +6,6 @@ import { WebviewWindow } from "@tauri-apps/api/window";
 import { app } from "@tauri-apps/api";
 
 export default function TitleBar() {
-	// const appWindow = import('@tauri-apps/api/window').then(lib => lib.appWindow).catch(e => console.log('got error' + e));
 	const [appWindow, setAppWindow] = useState<WebviewWindow | null>(null);
 
 	useEffect(() => {
@@ -33,7 +32,7 @@ export default function TitleBar() {
 	async function handleClose() {
 		if (!appWindow)
 			return;
-		appWindow.close();
+		appWindow.hide();
 	}
 	return (
 		<div data-tauri-drag-region className={styles.titlebar}>
