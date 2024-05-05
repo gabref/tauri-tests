@@ -1,7 +1,9 @@
+'use client'
+
 import styles from "./titlebar.module.css"
 import { appWindow } from "@tauri-apps/api/window"
 
-export function TitleBar() {
+export default function TitleBar() {
 	return (
 			<div data-tauri-drag-region className={styles.titlebar}>
 				<div onClick={() => appWindow.minimize()} className={styles.titlebarButton} id="titlebar-minimize">
