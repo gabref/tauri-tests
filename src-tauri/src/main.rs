@@ -87,6 +87,7 @@ fn handle_client(mut stream: TcpStream, app_handle: AppHandle) {
     stream.flush().unwrap();
 
     let window = app_handle.get_window("main").unwrap();
+    window.show().unwrap();
     window.move_window(Position::Center).unwrap();
     println!("client handled");
 }
