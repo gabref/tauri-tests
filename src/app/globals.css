@@ -26,6 +26,8 @@
 /*     rgb(var(--background-start-rgb)); */
 /* } */
 
+html, body { background: transparent }
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
