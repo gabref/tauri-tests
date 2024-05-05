@@ -58,15 +58,6 @@
 	"macOSPrivateApi": true,
     "windows": [
       {
-		"all": false,
-        "close": true,
-        "hide": true,
-        "show": true,
-        "maximize": true,
-        "minimize": true,
-        "unmaximize": true,
-        "unminimize": true,
-        "startDragging": true,
         "fullscreen": true,
         "resizable": true,
         "title": "menubar",
