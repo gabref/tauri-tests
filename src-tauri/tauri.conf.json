@@ -58,7 +58,7 @@
 	"macOSPrivateApi": true,
     "windows": [
       {
-        "fullscreen": true,
+        "fullscreen": false,
         "resizable": true,
         "title": "menubar",
         "width": 444,
