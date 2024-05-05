@@ -71,7 +71,6 @@
         "minimizable": true,
         "decorations": false,
         "focus": false,
-        "transparent": true,
         "fileDropEnabled": false
       }
     ],
