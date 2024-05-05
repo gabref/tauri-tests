@@ -93,7 +93,7 @@ fn handle_client(mut stream: TcpStream, app_handle: AppHandle) {
 }
 
 fn start_server(app_handle: AppHandle) {
-    let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:4242").unwrap();
     println!("Server listening on port 8080...");
 
     for stream in listener.incoming() {
