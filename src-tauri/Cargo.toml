@@ -20,6 +20,11 @@ serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.6.2", features = [ "window-all", "system-tray", "macos-private-api"] }
 tauri-plugin-positioner = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1", features = ["system-tray"] }
 window-vibrancy = "0.4.0"
+crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
+hyper = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+http-body-util = "0.1"
+hyper-util = { version = "0.1", features = ["full"] }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
