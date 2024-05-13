@@ -132,19 +132,21 @@ impl HttpServer {
             // Serve some instructions at /
             (&Method::GET, "/status") => {
                 println!("got request to /status");
-                let is_processing = self.is_processing.lock().unwrap();
+                let mut is_processing = self.is_processing.lock().unwrap();
                 println!("is_processing: {:#?}", *is_processing);
-                if *is_processing == true {
-                    return self.maestro_busy();
-                }
-                let mut last_operation = self.last_operation.lock().unwrap();
-                match &mut *last_operation {
-                    Some(op) => {
-                        let mut response = Response::new(Self::full(format!("{:#?}", op)));
-                        *response.status_mut() = StatusCode::OK;
-                        Ok(response)
+                match &mut *is_processing {
+                    true => {
+                        let mut last_operation = self.last_operation.lock().unwrap();
+                        match &mut *last_operation {
+                            Some(op) => {
+                                let mut response = Response::new(Self::full(format!("{:#?}", op)));
+                                *response.status_mut() = StatusCode::OK;
+                                Ok(response)
+                            }
+                            None => self.maestro_busy(),
+                        }
                     }
-                    None => self.maestro_busy(),
+                    false => self.maestro_busy(),
                 }
             }
 
