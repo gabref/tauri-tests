@@ -5,6 +5,7 @@ import { emit } from '@tauri-apps/api/event';
 export default function Pokemon() {
 
 	function handleClick() {
+		console.log('emitting event to backend');
 		emit('close', {
 			theMessage: 'closing window'
 		});

@@ -5,8 +5,8 @@ use std::{
 };
 
 use crossbeam::channel::Sender;
-use tauri::{AppHandle, PhysicalPosition};
 use tauri::Manager;
+use tauri::{AppHandle, PhysicalPosition};
 use tauri_plugin_positioner::{Position, WindowExt};
 
 use crate::{
@@ -35,6 +35,11 @@ fn open_window(app_handle: &AppHandle) {
     let window = app_handle.get_window("main").unwrap();
     window.show().unwrap();
     window.move_window(Position::Center).unwrap();
+}
+
+fn hide_window(app_handle: &AppHandle) {
+    let window = app_handle.get_window("main").unwrap();
+    window.hide().unwrap();
 }
 
 pub fn start_maestro(app_handle: AppHandle) {
@@ -108,17 +113,28 @@ fn do_pok_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
     open_window(app_handle);
 
     println!("Will start a Pokemon actions");
-    thread::sleep(Duration::from_secs(1));
-    app_handle.emit_all("push", Payload { message: "this is the message".into() });
-    println!("processing 1...");
-    thread::sleep(Duration::from_secs(1));
-    println!("processing 2...");
-    thread::sleep(Duration::from_secs(1));
-    println!("processing 3...");
+    thread::sleep(Duration::from_secs(2));
+    app_handle.emit_all(
+        "push",
+        Payload {
+            message: "this is the message".into(),
+        },
+    );
 
-    let output = OutputData {
-        status_code: data.value,
-        status_message: data.message,
-    };
-    sender.send(output).unwrap();
+    let app_handle_clone = app_handle.clone();
+
+    app_handle.listen_global("close", move |event| {
+        println!("processing 1...");
+        thread::sleep(Duration::from_secs(1));
+        println!("processing 2...");
+        thread::sleep(Duration::from_secs(1));
+        println!("processing 3...");
+
+        let output = OutputData {
+            status_code: data.value,
+            status_message: data.message.clone(),
+        };
+        sender.send(output).unwrap();
+        hide_window(&app_handle_clone);
+    });
 }
