@@ -143,7 +143,11 @@ impl HttpServer {
                                 *response.status_mut() = StatusCode::OK;
                                 Ok(response)
                             }
-                            None => self.maestro_busy(),
+                            None => {
+                                let mut response = Response::new(Self::full("no op until now"));
+                                *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                                Ok(response)
+                            }
                         }
                     }
                     true => self.maestro_busy(),
