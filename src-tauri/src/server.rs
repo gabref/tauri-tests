@@ -52,8 +52,8 @@ fn listen_maestro_output(
 ) {
     println!("Listening to maestro output");
     loop {
-        println!("Received something from maestro");
         let output_data = maestro_output_r.lock().unwrap().recv().unwrap();
+        println!("Received something from maestro");
         println!("from maestro: {:#?}", output_data);
         let mut is_processing = is_processing.lock().unwrap();
         *is_processing = false;
@@ -113,7 +113,9 @@ impl HttpServer {
     ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
         match (req.method(), req.uri().path()) {
             (&Method::GET, "/start") => {
+                println!("got request to /start");
                 let is_processing = self.is_processing.lock().unwrap();
+                println!("is_processing: {:#?}", *is_processing);
                 if *is_processing {
                     return self.maestro_busy();
                 }
@@ -129,7 +131,9 @@ impl HttpServer {
             }
             // Serve some instructions at /
             (&Method::GET, "/status") => {
+                println!("got request to /status");
                 let is_processing = self.is_processing.lock().unwrap();
+                println!("is_processing: {:#?}", *is_processing);
                 if *is_processing {
                     return self.maestro_busy();
                 }
