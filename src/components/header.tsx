@@ -9,7 +9,7 @@ type Logo = {
 
 const logo: Logo = { 
 	id: 'embed', 
-	src: '/logos/embed_verde_positivo.png', 
+	src: '/logo/embed_verde_positivo.png', 
 	alt: 'Logo Embed' 
 };
 
