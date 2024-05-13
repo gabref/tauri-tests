@@ -4,6 +4,7 @@ use std::{
     time::Duration,
 };
 
+use crossbeam::channel::Sender;
 use tauri::AppHandle;
 use tauri::Manager;
 use tauri_plugin_positioner::{Position, WindowExt};
@@ -74,19 +75,7 @@ pub fn start_maestro(app_handle: AppHandle) {
                 match operation {
                     Operations::Pokemon => match maestro_receiver_input.recv() {
                         Ok(data) => {
-                            println!("Will start a Pokemon actions");
-                            thread::sleep(Duration::from_secs(1));
-                            println!("processing 1...");
-                            thread::sleep(Duration::from_secs(1));
-                            println!("processing 2...");
-                            thread::sleep(Duration::from_secs(1));
-                            println!("processing 3...");
-
-                            let output = OutputData {
-                                status_code: data.value,
-                                status_message: data.message,
-                            };
-                            maestro_output_s.send(output).unwrap();
+                            do_pok_op(data, maestro_output_s.clone());
                         }
                         Err(_) => {
                             println!("Error occurred in maestro receiver input");
@@ -104,4 +93,20 @@ pub fn start_maestro(app_handle: AppHandle) {
             }
         }
     }
+}
+
+fn do_pok_op(data: Data, sender: Sender<OutputData>) {
+    println!("Will start a Pokemon actions");
+    thread::sleep(Duration::from_secs(1));
+    println!("processing 1...");
+    thread::sleep(Duration::from_secs(1));
+    println!("processing 2...");
+    thread::sleep(Duration::from_secs(1));
+    println!("processing 3...");
+
+    let output = OutputData {
+        status_code: data.value,
+        status_message: data.message,
+    };
+    sender.send(output).unwrap();
 }
