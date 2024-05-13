@@ -114,6 +114,7 @@ fn do_pok_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
 
     println!("Will start a Pokemon actions");
     thread::sleep(Duration::from_secs(2));
+    println!("emitting event");
     app_handle.emit_all(
         "push",
         Payload {
