@@ -45,18 +45,25 @@ pub fn start_maestro(app_handle: AppHandle) {
     let maestro_sender_input = Arc::new(Mutex::new(maestro_sender_input));
     let maestro_output_r = Arc::new(Mutex::new(maestro_output_r));
 
-    let file_watcher = FileWatcher::new("C:\\Users\\codec\\Documents\\embed".to_string(), maestro_sender.clone());
+    let file_watcher = FileWatcher::new(
+        "C:\\Users\\codec\\Documents\\embed".to_string(),
+        maestro_sender.clone(),
+    );
     file_watcher.start_watching();
 
-    let http_server = HttpServer::new(
-        maestro_sender.clone(),
-        maestro_sender_input.clone(),
-        maestro_output_r.clone(),
-    );
-    let addr = ([127, 0, 0, 1], 8080).into();
-    tokio::runtime::Runtime::new()
-        .unwrap()
-        .spawn(run_server(addr, http_server));
+    // spawn the server in a separate asynchronous task
+    thread::spawn(move || {
+        let http_server = HttpServer::new(
+            maestro_sender.clone(),
+            maestro_sender_input.clone(),
+            maestro_output_r.clone(),
+        );
+        let addr = ([127, 0, 0, 1], 8080).into();
+
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(run_server(addr, http_server));
+    });
 
     println!("everythin started");
 
