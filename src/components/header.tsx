@@ -13,7 +13,7 @@ const logo: Logo = {
 	alt: 'Logo Embed' 
 };
 
-export default function Header() {
+export function Header() {
 	return (
 		<header>
 			<nav className='py-8 h-20 flex justify-between'>

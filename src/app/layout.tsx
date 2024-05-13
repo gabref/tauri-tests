@@ -5,7 +5,6 @@ const inter = Inter({ subsets: ["latin"] });
 import TitleBar from "@/components/titlebar";
 import { Header } from "@/components/header";
 
-
 export default function RootLayout({
 	children,
 }: Readonly<{
