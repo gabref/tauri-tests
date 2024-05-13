@@ -1,112 +1,5 @@
-I have this code:
+i have this code for the server.rs
 
-main.rs
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
-mod server;
-mod maestro;
-mod watcher;
-
-use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
-use tauri_plugin_positioner::{Position, WindowExt};
-#[allow(unused_imports)]
-use window_vibrancy::{apply_blur, apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
-
-fn main() {
-    let quit = CustomMenuItem::new("quit".to_string(), "Quit").accelerator("ctrl+alt+q");
-    let system_tray_menu = SystemTrayMenu::new().add_item(quit);
-
-    tauri::Builder::default()
-        .plugin(tauri_plugin_positioner::init())
-        .system_tray(SystemTray::new().with_menu(system_tray_menu))
-        .setup(|app| {
-            app.listen_global("quit", |_| {
-                std::process::exit(0);
-            });
-
-            let _window = app.get_window("main").unwrap();
-
-            #[cfg(target_os = "macos")]
-            apply_vibrancy(&_window, NSVisualEffectMaterial::HudWindow, None, None)
-                .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
-
-            #[cfg(target_os = "windows")]
-            apply_blur(&_window, Some((18, 18, 18, 125)))
-                .expect("Unsupported platform! 'apply_blur' is only supported on Windows");
-
-            println!("passing handle");
-            maestro::start_maestro(app.handle());
-            println!("handle passed");
-            Ok(())
-        })
-        .on_window_event(|event| match event.event() {
-            tauri::WindowEvent::CloseRequested { api, .. } => {
-                event.window().hide().unwrap();
-                api.prevent_close();
-            }
-            _ => {}
-        })
-        .on_system_tray_event(|app, event| {
-            tauri_plugin_positioner::on_tray_event(app, &event);
-            match event {
-                SystemTrayEvent::LeftClick {
-                    position: _,
-                    size: _,
-                    ..
-                } => {
-                    let window = app.get_window("main").unwrap();
-                    let _ = window.move_window(Position::TrayCenter);
-                    if window.is_visible().unwrap() {
-                        window.hide().unwrap();
-                    } else {
-                        window.show().unwrap();
-                        window.set_focus().unwrap();
-                    }
-                }
-                SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
-                    "quit" => {
-                        std::process::exit(0);
-                    }
-                    _ => {}
-                },
-                _ => {}
-            }
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
-
-maestro.rs
-use std::sync::{Arc, Mutex};
-
-use tauri::AppHandle;
-use tauri_plugin_positioner::{Position, WindowExt};
-use tauri::Manager;
-
-use crate::{server::HttpServer, watcher::FileWatcher};
-
-fn open_window(app_handle: AppHandle) {
-    let window = app_handle.get_window("main").unwrap();
-    window.show().unwrap();
-    window.move_window(Position::Center).unwrap();
-}
-
-pub fn start_maestro(app_handle: AppHandle) {
-    let (maestro_sender, maestro_receiver) = crossbeam::channel::bounded(100);
-    let maestro_sender = Arc::new(Mutex::new(maestro_sender));
-
-    let file_watcher = FileWatcher::new("/home/gabre/work".to_string(), maestro_sender.clone());
-    file_watcher.start_watching();
-
-    let http_server = HttpServer::new(maestro_sender.clone());
-    let addr = ([127, 0, 0, 1], 8080).into();
-    tokio::runtime::Runtime::new().unwrap().block_on(http_server.run_server(addr));
-
-    println!("everythin started");
-}
-
-server.rs
 use http_body_util::{combinators::BoxBody, BodyExt, Empty, Full};
 use hyper::body::{Bytes, Frame};
 use hyper::server::conn::http1;
@@ -117,21 +10,103 @@ use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 
+use crate::maestro::Operations;
+
+pub async fn run_server(
+    addr: SocketAddr,
+    server: HttpServer,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let listener = TcpListener::bind(addr).await?;
+    println!("Listening on http://{}", addr);
+
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let io = TokioIo::new(stream);
+        let server_clone = server.clone();
+        tokio::task::spawn(async move {
+            if let Err(err) = http1::Builder::new()
+                .serve_connection(
+                    io,
+                    service_fn(move |req| {
+                        let server_clone = server_clone.clone();
+                        async move { server_clone.handle_request(req).await }
+                    }),
+                )
+                .await
+            {
+                println!("Error serving connection: {:?}", err);
+            }
+        });
+    }
+}
+
+pub struct Data {
+    value: i32,
+    message: String,
+}
+
+#[derive(Clone)]
 pub struct HttpServer {
-    maestro_sender: Arc<Mutex<crossbeam::channel::Sender<String>>>,
+    maestro_sender: Arc<Mutex<crossbeam::channel::Sender<Operations>>>,
+    maestro_sender_input: Arc<Mutex<crossbeam::channel::Sender<Data>>>,
+    is_processing: Arc<Mutex<bool>>,
 }
 
 impl HttpServer {
-    pub fn new(maestro_sender: Arc<Mutex<crossbeam::channel::Sender<String>>>) -> Self {
-        Self { maestro_sender }
+    pub fn new(
+        maestro_sender: Arc<Mutex<crossbeam::channel::Sender<Operations>>>,
+        maestro_sender_input: Arc<Mutex<crossbeam::channel::Sender<Data>>>,
+    ) -> Self {
+        Self {
+            maestro_sender,
+            maestro_sender_input,
+            is_processing: Arc::new(Mutex::new(false)),
+        }
+    }
+
+    fn maestro_busy(&self) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+        let mut response = Response::new(Self::empty());
+        *response.status_mut() = StatusCode::PROCESSING;
+        Ok(response)
+    }
+
+    fn start_operation(&self, op: Operations) {
+        let sender = self.maestro_sender.lock().unwrap();
+        sender.send(op).unwrap();
+    }
+
+    fn operation_started(&self) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+        let mut response = Response::new(Self::full("started successfully"));
+        *response.status_mut() = StatusCode::OK;
+        let mut is_processing = self.is_processing.lock().unwrap();
+        *is_processing = true;
+        Ok(response)
+    }
+
+    fn operation_finished(&self) {
+        let mut is_processing = self.is_processing.lock().unwrap();
+        *is_processing = false;
     }
 
     /// This is our service handler. It receives a Request, routes on its
     /// path, and returns a Future of a Response.
     async fn handle_request(
+        &self,
         req: Request<hyper::body::Incoming>,
     ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
         match (req.method(), req.uri().path()) {
+            (&Method::GET, "/start") => {
+                let is_processing = self.is_processing.lock().unwrap();
+                if *is_processing {
+                    return self.maestro_busy()
+                }
+                self.start_operation(Operations::Pokemon);
+                // TODO: parse the input and start transaction
+                let data = Data { value: 37, message: "My message".to_string() };
+                let sender_input = self.maestro_sender_input.lock().unwrap();
+                sender_input.send(data);
+                self.operation_started()
+            }
             // Serve some instructions at /
             (&Method::GET, "/") => Ok(Response::new(Self::full(
                 "Try POSTing data to /echo such as: `curl localhost:3000/echo -XPOST -d \"hello world\"`",
@@ -140,7 +115,6 @@ impl HttpServer {
             (&Method::POST, "/echo") => Ok(Response::new(req.into_body().boxed())),
             // Convert to uppercase before sending back to client using a stream.
             (&Method::POST, "/echo/uppercase") => {
-
                 let frame_stream = req.into_body().map_frame(|frame| {
                     let frame = if let Ok(data) = frame.into_data() {
                         data.iter()
@@ -195,94 +169,44 @@ impl HttpServer {
             .map_err(|never| match never {})
             .boxed()
     }
-
-    pub async fn run_server(
-        &self,
-        addr: SocketAddr,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-
-        let listener = TcpListener::bind(addr).await?;
-        println!("Listening on http://{}", addr);
-
-        loop {
-            let (stream, _) = listener.accept().await?;
-            let io = TokioIo::new(stream);
-            tokio::task::spawn(async move {
-                if let Err(err) = http1::Builder::new()
-                    .serve_connection(io, service_fn(Self::handle_request))
-                    .await
-                {
-                    println!("Error serving connection: {:?}", err);
-                }
-            });
-        }
-    }
 }
 
-watcher.rs
-use std::path::Path;
+and for the maestro.rs
+
 use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
 
-// Define a struct to hold the file watcher state
-pub struct FileWatcher {
-    directory: String,
-    maestro_sender: Arc<Mutex<crossbeam::channel::Sender<String>>>,
+use tauri::AppHandle;
+use tauri_plugin_positioner::{Position, WindowExt};
+use tauri::Manager;
+
+use crate::{server::{run_server, HttpServer}, watcher::FileWatcher};
+
+pub enum Operations {
+    Pix,
+    Tef,
+    Pokemon,
 }
 
-impl FileWatcher {
-    pub fn new(
-        directory: String,
-        maestro_sender: Arc<Mutex<crossbeam::channel::Sender<String>>>,
-    ) -> Self {
-        Self {
-            directory,
-            maestro_sender,
-        }
-    }
-
-    pub fn start_watching(&self) {
-        let path = Path::new(&self.directory);
-        if !path.exists() || !path.is_dir() {
-            panic!("Invalid directory path!");
-        }
-
-        thread::spawn(move || {
-            loop {
-                // match fs::read_dir(&path) {
-                //     Ok(entries) => {
-                //         for entry in entries {
-                //             if let Ok(entry) = entry {
-                //                 let file_path = entry.path();
-                //                 if file_path.is_file() {
-                //                     if let Ok(mut file) = fs::File::open(&file_path) {
-                //                         let mut contents = String::new();
-                //                         if let Ok(_) = file.read_to_string(&mut contents) {
-                //                             // Send contents to maestro thread
-                //                             let sender = self.maestro_sender.lock().unwrap();
-                //
-                //                             sender.send(contents).unwrap();
-                //                             // Delete the file after reading
-                //                             if let Err(err) = fs::remove_file(&file_path) {
-                //                                 eprintln!("Error deleting file: {}", err);
-                //                             }
-                //                         }
-                //                     }
-                //                 }
-                //             }
-                //         }
-                //     }
-                //     Err(err) => {
-                //         eprintln!("Error reading directory: {}", err);
-                //     }
-                // }
-                thread::sleep(Duration::from_secs(5)); // Check every 5 seconds
-                println!("reading dir, waiting for file")
-            }
-        });
-    }
+fn open_window(app_handle: AppHandle) {
+    let window = app_handle.get_window("main").unwrap();
+    window.show().unwrap();
+    window.move_window(Position::Center).unwrap();
 }
 
-so, now, i want to implement the following: add a endoint in the server '/transaction-pix' that will immediately tell the maestro thread that input has come and a transaction will begin. so the maestro thread has to tell to server and watcher to stop receiving input. in the case of the server, the server will need to respond with a status code and message showing that it is busy right now. then the /transaction-pix after notifing the maestro thread will continue, parse the input receive, and then pass the parsed values to the maestro thread, which will then start the transaction flow. when the transaction has ended, the maestro thread notifies the server and watcher so that they can start receiving input again.
-remember, i want to follow the method where I use structs and methods
+pub fn start_maestro(app_handle: AppHandle) {
+    let (maestro_sender, maestro_receiver) = crossbeam::channel::bounded(1);
+    let (maestro_sender_input, maestro_receiver_input) = crossbeam::channel::bounded(1);
+    let maestro_sender = Arc::new(Mutex::new(maestro_sender));
+    let maestro_sender_input = Arc::new(Mutex::new(maestro_sender_input));
+
+    let file_watcher = FileWatcher::new("/home/gabre/work".to_string(), maestro_sender.clone());
+    file_watcher.start_watching();
+
+    let http_server = HttpServer::new(maestro_sender.clone(), maestro_sender_input.clone());
+    let addr = ([127, 0, 0, 1], 8080).into();
+    tokio::runtime::Runtime::new().unwrap().block_on(run_server(addr, http_server));
+
+    println!("everythin started");
+}
+
+now, when the server send to maestro the data, maestro will run the transaction flow. for now, we can just sleep the thread maestro for testing, then, when the maestro has finished processing, the maestro thread will send back to the server (by channels, or by callback, or any other thing suitable) the output information, that the server will use, like the info of the last transaction, and the is_processing field from the server will be false

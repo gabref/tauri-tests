@@ -6,20 +6,82 @@ use hyper::{body::Body, Method, Request, Response, StatusCode};
 use hyper_util::rt::TokioIo;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
+use std::thread;
 use tokio::net::TcpListener;
 
-use crate::maestro::Operations;
+use crate::maestro::{Data, Operations, OutputData};
 
+pub async fn run_server(
+    addr: SocketAddr,
+    server: HttpServer,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let listener = TcpListener::bind(addr).await?;
+    println!("Listening on http://{}", addr);
+
+    // spawn background task to listen for maestro output data
+    let maestro_output_r = server.maestro_receiver_output.clone();
+    let is_processing = server.is_processing.clone();
+    let last_operation = server.last_operation.clone();
+    thread::spawn(move || listen_maestro_output(maestro_output_r, is_processing, last_operation));
+
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let io = TokioIo::new(stream);
+        let server_clone = server.clone();
+        tokio::task::spawn(async move {
+            if let Err(err) = http1::Builder::new()
+                .serve_connection(
+                    io,
+                    service_fn(move |req| {
+                        let server_clone = server_clone.clone();
+                        async move { server_clone.handle_request(req).await }
+                    }),
+                )
+                .await
+            {
+                println!("Error serving connection: {:?}", err);
+            }
+        });
+    }
+}
+
+fn listen_maestro_output(
+    maestro_output_r: Arc<Mutex<crossbeam::channel::Receiver<OutputData>>>,
+    is_processing: Arc<Mutex<bool>>,
+    last_operation: Arc<Mutex<Option<OutputData>>>,
+) {
+    println!("Listening to maestro output");
+    loop {
+        println!("Received something from maestro");
+        let output_data = maestro_output_r.lock().unwrap().recv().unwrap();
+        let mut is_processing = is_processing.lock().unwrap();
+        *is_processing = false;
+        let mut last_operation = last_operation.lock().unwrap();
+        *last_operation = Some(output_data);
+    }
+}
+
+#[derive(Clone)]
 pub struct HttpServer {
     maestro_sender: Arc<Mutex<crossbeam::channel::Sender<Operations>>>,
+    maestro_sender_input: Arc<Mutex<crossbeam::channel::Sender<Data>>>,
+    maestro_receiver_output: Arc<Mutex<crossbeam::channel::Receiver<OutputData>>>,
+    last_operation: Arc<Mutex<Option<OutputData>>>,
     is_processing: Arc<Mutex<bool>>,
 }
 
 impl HttpServer {
-    pub fn new(maestro_sender: Arc<Mutex<crossbeam::channel::Sender<Operations>>>) -> Self {
+    pub fn new(
+        maestro_sender: Arc<Mutex<crossbeam::channel::Sender<Operations>>>,
+        maestro_sender_input: Arc<Mutex<crossbeam::channel::Sender<Data>>>,
+        maestro_receiver_output: Arc<Mutex<crossbeam::channel::Receiver<OutputData>>>,
+    ) -> Self {
         Self {
             maestro_sender,
+            maestro_sender_input,
+            maestro_receiver_output,
             is_processing: Arc::new(Mutex::new(false)),
+            last_operation: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -52,52 +114,33 @@ impl HttpServer {
             (&Method::GET, "/start") => {
                 let is_processing = self.is_processing.lock().unwrap();
                 if *is_processing {
-                    return self.maestro_busy()
+                    return self.maestro_busy();
                 }
                 self.start_operation(Operations::Pokemon);
+                // TODO: parse the input and start transaction
+                let data = Data {
+                    value: 37,
+                    message: "My message".to_string(),
+                };
+                let sender_input = self.maestro_sender_input.lock().unwrap();
+                sender_input.send(data);
                 self.operation_started()
             }
             // Serve some instructions at /
-            (&Method::GET, "/") => Ok(Response::new(Self::full(
-                "Try POSTing data to /echo such as: `curl localhost:3000/echo -XPOST -d \"hello world\"`",
-            ))),
-            // Simply echo the body back to the client.
-            (&Method::POST, "/echo") => Ok(Response::new(req.into_body().boxed())),
-            // Convert to uppercase before sending back to client using a stream.
-            (&Method::POST, "/echo/uppercase") => {
-
-                let frame_stream = req.into_body().map_frame(|frame| {
-                    let frame = if let Ok(data) = frame.into_data() {
-                        data.iter()
-                            .map(|byte| byte.to_ascii_uppercase())
-                            .collect::<Bytes>()
-                    } else {
-                        Bytes::new()
-                    };
-                    Frame::data(frame)
-                });
-                Ok(Response::new(frame_stream.boxed()))
-            }
-
-            // Reverse the entire body before sending back to the client.
-            //
-            // Since we don't know the end yet, we can't simply stream
-            // the chunks as they arrive as we did with the above uppercase endpoint.
-            // So here we do `.await` on the future, waiting on concatenating the full body,
-            // then afterwards the content can be reversed. Only then can we return a `Response`.
-            (&Method::POST, "/echo/reversed") => {
-                // To protect our server, reject requests with bodies larger than
-                // 64kbs of data.
-                let max = req.body().size_hint().upper().unwrap_or(u64::MAX);
-                if max > 1024 * 64 {
-                    let mut resp = Response::new(Self::full("Body too big"));
-                    *resp.status_mut() = hyper::StatusCode::PAYLOAD_TOO_LARGE;
-                    return Ok(resp);
+            (&Method::GET, "/status") => {
+                let is_processing = self.is_processing.lock().unwrap();
+                if *is_processing {
+                    return self.maestro_busy();
                 }
-                let whole_body = req.collect().await?.to_bytes();
-                let reversed_body = whole_body.iter().rev().cloned().collect::<Vec<u8>>();
-                Ok(Response::new(Self::full(reversed_body)))
-
+                let mut last_operation = self.last_operation.lock().unwrap();
+                match &mut *last_operation {
+                    Some(op) => {
+                        let mut response = Response::new(Self::full(format!("{:#?}", op)));
+                        *response.status_mut() = StatusCode::OK;
+                        Ok(response)
+                    }
+                    None => self.maestro_busy(),
+                }
             }
 
             // Return the 404 Not Found for other routes.
@@ -119,33 +162,5 @@ impl HttpServer {
         Full::new(chunk.into())
             .map_err(|never| match never {})
             .boxed()
-    }
-
-    pub async fn run_server(
-        &'static self,
-        addr: SocketAddr,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let listener = TcpListener::bind(addr).await?;
-        println!("Listening on http://{}", addr);
-
-        loop {
-            let (stream, _) = listener.accept().await?;
-            let io = TokioIo::new(stream);
-            let server_clone = self.clone();
-            tokio::task::spawn(async move {
-                if let Err(err) = http1::Builder::new()
-                    .serve_connection(
-                        io,
-                        service_fn(move |req| {
-                            // let server_clone = server_clone.clone();
-                            async move { server_clone.handle_request(req).await }
-                        }),
-                    )
-                    .await
-                {
-                    println!("Error serving connection: {:?}", err);
-                }
-            });
-        }
     }
 }
