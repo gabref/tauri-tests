@@ -1,8 +1,8 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod server;
 mod maestro;
+mod server;
 mod watcher;
 
 use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
@@ -23,6 +23,11 @@ fn main() {
             });
 
             let _window = app.get_window("main").unwrap();
+
+            #[cfg(debug_assertions)]
+            {
+                _window.open_devtools();
+            }
 
             #[cfg(target_os = "macos")]
             apply_vibrancy(&_window, NSVisualEffectMaterial::HudWindow, None, None)
