@@ -87,8 +87,8 @@ impl HttpServer {
     }
 
     fn maestro_busy(&self) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
-        let mut response = Response::new(Self::empty());
-        *response.status_mut() = StatusCode::PROCESSING;
+        let mut response = Response::new(Self::full("server is busyy"));
+        *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
         Ok(response)
     }
 
