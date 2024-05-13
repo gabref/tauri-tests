@@ -135,7 +135,7 @@ impl HttpServer {
                 let mut is_processing = self.is_processing.lock().unwrap();
                 println!("is_processing: {:#?}", *is_processing);
                 match &mut *is_processing {
-                    true => {
+                    false => {
                         let mut last_operation = self.last_operation.lock().unwrap();
                         match &mut *last_operation {
                             Some(op) => {
@@ -146,7 +146,7 @@ impl HttpServer {
                             None => self.maestro_busy(),
                         }
                     }
-                    false => self.maestro_busy(),
+                    true => self.maestro_busy(),
                 }
             }
 
