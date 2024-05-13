@@ -38,6 +38,10 @@ fn open_window(app_handle: &AppHandle) {
 }
 
 pub fn start_maestro(app_handle: AppHandle) {
+    thread::spawn(|| start_maestro_thread(app_handle));
+}
+
+fn start_maestro_thread(app_handle: AppHandle) {
     let (maestro_sender, maestro_receiver) = crossbeam::channel::bounded(1);
     let (maestro_sender_input, maestro_receiver_input) = crossbeam::channel::bounded(1);
     let (maestro_output_s, maestro_output_r) = crossbeam::channel::bounded(1);
