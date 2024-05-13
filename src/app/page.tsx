@@ -1,7 +1,7 @@
 'use client'
 
 import { listen } from '@tauri-apps/api/event'
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function Home() {
