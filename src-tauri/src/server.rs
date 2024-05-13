@@ -95,10 +95,27 @@ impl HttpServer {
     fn start_operation(&self, op: Operations) {
         let sender = self.maestro_sender.lock().unwrap();
         sender.send(op).unwrap();
-        println!("Sender op to maestro")
+        println!("Sended op to maestro")
     }
 
-    fn operation_started(&self, mut is_processing: MutexGuard<bool>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    fn parse_data(&self) {
+        println!("Paring the data");
+        let data = Data {
+            value: 37,
+            message: "My message".to_string(),
+        };
+        println!("Unlocking sender_input");
+        let sender_input = self.maestro_sender_input.lock().unwrap();
+        if let Err(e) = sender_input.send(data) {
+            println!("Error happened sending data: {:#?}", e);
+        }
+        println!("Sended data to maestro");
+    }
+
+    fn operation_started(
+        &self,
+        mut is_processing: MutexGuard<bool>,
+    ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
         println!("Creating starting response");
         let mut response = Response::new(Self::full("started successfully"));
         *response.status_mut() = StatusCode::OK;
@@ -125,14 +142,7 @@ impl HttpServer {
                 println!("Starting operation");
                 self.start_operation(Operations::Pokemon);
                 // TODO: parse the input and start transaction
-                println!("Paring the data");
-                let data = Data {
-                    value: 37,
-                    message: "My message".to_string(),
-                };
-                let sender_input = self.maestro_sender_input.lock().unwrap();
-                sender_input.send(data);
-                println!("Sended data to maestro");
+                self.parse_data();
                 self.operation_started(is_processing)
             }
             // Serve some instructions at /
