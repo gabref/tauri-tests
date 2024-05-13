@@ -13,10 +13,11 @@ type OutputData = {
 
 async function* getData(): AsyncGenerator<OutputData> {
 	while (true) {
+		await new Promise((resolve) => setTimeout(resolve, 2000));
 		const res = await invoke<string>('create_json_string');
 		const resJson = JSON.parse(res) as OutputData;
 		if (resJson.is_last) {
-			resJson.name.concat(" - the end");
+			resJson.name = resJson.name.concat(" - the end");
 			yield resJson;
 			return;
 		}
