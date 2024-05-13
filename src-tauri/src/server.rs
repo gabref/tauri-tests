@@ -95,6 +95,7 @@ impl HttpServer {
     fn start_operation(&self, op: Operations) {
         let sender = self.maestro_sender.lock().unwrap();
         sender.send(op).unwrap();
+        println!("Sender op to maestro")
     }
 
     fn operation_started(&self) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
@@ -119,14 +120,17 @@ impl HttpServer {
                 if *is_processing == true {
                     return self.maestro_busy();
                 }
+                println!("Starting operation");
                 self.start_operation(Operations::Pokemon);
                 // TODO: parse the input and start transaction
+                println!("Paring the data");
                 let data = Data {
                     value: 37,
                     message: "My message".to_string(),
                 };
                 let sender_input = self.maestro_sender_input.lock().unwrap();
                 sender_input.send(data);
+                println!("Sended data to maestro");
                 self.operation_started()
             }
             // Serve some instructions at /
