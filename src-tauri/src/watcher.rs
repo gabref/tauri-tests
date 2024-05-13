@@ -24,8 +24,11 @@ impl FileWatcher {
 
     pub fn start_watching(&self) {
         let path = Path::new(&self.directory);
-        if !path.exists() || !path.is_dir() {
-            panic!("Invalid directory path!");
+        if !path.exists() {
+            panic!("Invalid directory path! does not exists");
+        }
+        if !path.is_dir() {
+            panic!("path is not a dir");
         }
 
         thread::spawn(move || {
