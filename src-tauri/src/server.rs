@@ -5,7 +5,7 @@ use hyper::service::service_fn;
 use hyper::{body::Body, Method, Request, Response, StatusCode};
 use hyper_util::rt::TokioIo;
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use tokio::net::TcpListener;
 
@@ -98,12 +98,11 @@ impl HttpServer {
         println!("Sender op to maestro")
     }
 
-    fn operation_started(&self) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    fn operation_started(&self, mut is_processing: MutexGuard<bool>) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
         println!("Creating starting response");
         let mut response = Response::new(Self::full("started successfully"));
         *response.status_mut() = StatusCode::OK;
         println!("locking is processing");
-        let mut is_processing = self.is_processing.lock().unwrap();
         *is_processing = true;
         println!("sending repsonse");
         Ok(response)
@@ -134,7 +133,7 @@ impl HttpServer {
                 let sender_input = self.maestro_sender_input.lock().unwrap();
                 sender_input.send(data);
                 println!("Sended data to maestro");
-                self.operation_started()
+                self.operation_started(is_processing)
             }
             // Serve some instructions at /
             (&Method::GET, "/status") => {
