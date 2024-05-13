@@ -99,10 +99,13 @@ impl HttpServer {
     }
 
     fn operation_started(&self) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+        println!("Creating starting response");
         let mut response = Response::new(Self::full("started successfully"));
         *response.status_mut() = StatusCode::OK;
+        println!("locking is processing");
         let mut is_processing = self.is_processing.lock().unwrap();
         *is_processing = true;
+        println!("sending repsonse");
         Ok(response)
     }
 
