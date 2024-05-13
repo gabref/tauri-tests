@@ -116,7 +116,7 @@ impl HttpServer {
                 println!("got request to /start");
                 let is_processing = self.is_processing.lock().unwrap();
                 println!("is_processing: {:#?}", *is_processing);
-                if *is_processing {
+                if *is_processing == true {
                     return self.maestro_busy();
                 }
                 self.start_operation(Operations::Pokemon);
@@ -134,7 +134,7 @@ impl HttpServer {
                 println!("got request to /status");
                 let is_processing = self.is_processing.lock().unwrap();
                 println!("is_processing: {:#?}", *is_processing);
-                if *is_processing {
+                if *is_processing == true {
                     return self.maestro_busy();
                 }
                 let mut last_operation = self.last_operation.lock().unwrap();
