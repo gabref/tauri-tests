@@ -107,10 +107,9 @@ struct Payload {
 fn do_pok_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
     open_window(app_handle);
 
-    app_handle.emit_all("push", Payload { message: "this is the message".into() });
-
     println!("Will start a Pokemon actions");
     thread::sleep(Duration::from_secs(1));
+    app_handle.emit_all("push", Payload { message: "this is the message".into() });
     println!("processing 1...");
     thread::sleep(Duration::from_secs(1));
     println!("processing 2...");
