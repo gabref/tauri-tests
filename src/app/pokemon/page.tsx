@@ -13,7 +13,7 @@ export default function Pokemon() {
 	return (
 		<>
 			<h1>Pokemon page</h1>
-			<button onClick={handleClick} >Ciaoo</button>
+			<button onClick={handleClick} className="bg-green-300 rounded-s" >Close</button>
 		</>
 	)
 }
