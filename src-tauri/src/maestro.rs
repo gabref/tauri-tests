@@ -5,7 +5,7 @@ use std::{
 };
 
 use crossbeam::channel::Sender;
-use tauri::AppHandle;
+use tauri::{AppHandle, PhysicalPosition};
 use tauri::Manager;
 use tauri_plugin_positioner::{Position, WindowExt};
 
@@ -99,8 +99,16 @@ fn start_maestro_thread(app_handle: AppHandle) {
     }
 }
 
+#[derive(Clone, serde::Serialize)]
+struct Payload {
+    message: String,
+}
+
 fn do_pok_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
     open_window(app_handle);
+
+    app_handle.emit_all("push", Payload { message: "this is the message".into() });
+
     println!("Will start a Pokemon actions");
     thread::sleep(Duration::from_secs(1));
     println!("processing 1...");
