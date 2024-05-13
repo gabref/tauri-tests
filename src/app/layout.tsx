@@ -1,9 +1,9 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
-import dynamic from 'next/dynamic'
 
 const inter = Inter({ subsets: ["latin"] });
 import TitleBar from "@/components/titlebar";
+import { Header } from "@/components/header";
 
 
 export default function RootLayout({
@@ -15,6 +15,7 @@ export default function RootLayout({
 		<html lang="en">
 			<body className={inter.className}>
 				<TitleBar />
+				<Header />
 				<main>{children}</main>
 			</body>
 		</html>
