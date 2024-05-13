@@ -11,7 +11,7 @@ export default function Pokemon() {
 		emit('close', {
 			theMessage: 'closing window'
 		});
-		router.push("/");
+		new Promise(() => setTimeout(() => { router.push("/") }, 2000));
 	}
 
 	return (

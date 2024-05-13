@@ -126,9 +126,9 @@ fn do_pok_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
 
     app_handle.listen_global("close", move |event| {
         println!("processing 1...");
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_millis(1));
         println!("processing 2...");
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_millis(1));
         println!("processing 3...");
 
         let output = OutputData {
