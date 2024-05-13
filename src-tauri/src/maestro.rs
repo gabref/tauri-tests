@@ -20,7 +20,7 @@ pub enum Operations {
 }
 
 pub struct Data {
-    pub value: i32,
+    pub value: u32,
     pub message: String,
 }
 
@@ -69,26 +69,35 @@ pub fn start_maestro(app_handle: AppHandle) {
 
     loop {
         match maestro_receiver.recv() {
-            Ok(operation) => match operation {
-                Operations::Pokemon => {
-                    println!("Will start a Pokemon actions");
-                    thread::sleep(Duration::from_secs(1));
-                    println!("processing 1...");
-                    thread::sleep(Duration::from_secs(1));
-                    println!("processing 2...");
-                    thread::sleep(Duration::from_secs(1));
-                    println!("processing 3...");
+            Ok(operation) => {
+                println!("got operation, stop all threads, and do action");
+                match operation {
+                    Operations::Pokemon => match maestro_receiver_input.recv() {
+                        Ok(data) => {
+                            println!("Will start a Pokemon actions");
+                            thread::sleep(Duration::from_secs(1));
+                            println!("processing 1...");
+                            thread::sleep(Duration::from_secs(1));
+                            println!("processing 2...");
+                            thread::sleep(Duration::from_secs(1));
+                            println!("processing 3...");
 
-                    let output = OutputData {
-                        status_code: 42,
-                        status_message: "Pokemon success".to_string(),
-                    };
-                    maestro_output_s.send(output).unwrap();
+                            let output = OutputData {
+                                status_code: data.value,
+                                status_message: data.message,
+                            };
+                            maestro_output_s.send(output).unwrap();
+                        }
+                        Err(_) => {
+                            println!("Error occurred in maestro receiver input");
+                            break;
+                        }
+                    },
+                    _ => {
+                        println!("Other actions");
+                    }
                 }
-                _ => {
-                    println!("Other actions");
-                }
-            },
+            }
             Err(_) => {
                 println!("Error occurred in maestro receiver");
                 break;

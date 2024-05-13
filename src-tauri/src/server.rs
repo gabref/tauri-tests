@@ -101,7 +101,7 @@ impl HttpServer {
     fn parse_data(&self) {
         println!("Paring the data");
         let data = Data {
-            value: 37,
+            value: 42,
             message: "My message".to_string(),
         };
         println!("Unlocking sender_input");
