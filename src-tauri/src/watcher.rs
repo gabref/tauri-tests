@@ -60,7 +60,7 @@ impl FileWatcher {
                 //         eprintln!("Error reading directory: {}", err);
                 //     }
                 // }
-                thread::sleep(Duration::from_secs(5)); // Check every 5 seconds
+                thread::sleep(Duration::from_secs(100)); // Check every 5 seconds
                 println!("reading dir, waiting for file")
             }
         });

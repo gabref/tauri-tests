@@ -54,6 +54,7 @@ fn listen_maestro_output(
     loop {
         println!("Received something from maestro");
         let output_data = maestro_output_r.lock().unwrap().recv().unwrap();
+        println!("from maestro: {:#?}", output_data);
         let mut is_processing = is_processing.lock().unwrap();
         *is_processing = false;
         let mut last_operation = last_operation.lock().unwrap();
