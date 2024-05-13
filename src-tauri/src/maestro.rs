@@ -31,7 +31,7 @@ pub struct OutputData {
     pub status_message: String,
 }
 
-fn open_window(app_handle: AppHandle) {
+fn open_window(app_handle: &AppHandle) {
     let window = app_handle.get_window("main").unwrap();
     window.show().unwrap();
     window.move_window(Position::Center).unwrap();
@@ -75,7 +75,7 @@ pub fn start_maestro(app_handle: AppHandle) {
                 match operation {
                     Operations::Pokemon => match maestro_receiver_input.recv() {
                         Ok(data) => {
-                            do_pok_op(data, maestro_output_s.clone());
+                            do_pok_op(data, maestro_output_s.clone(), &app_handle);
                         }
                         Err(_) => {
                             println!("Error occurred in maestro receiver input");
@@ -95,7 +95,8 @@ pub fn start_maestro(app_handle: AppHandle) {
     }
 }
 
-fn do_pok_op(data: Data, sender: Sender<OutputData>) {
+fn do_pok_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
+    open_window(app_handle);
     println!("Will start a Pokemon actions");
     thread::sleep(Duration::from_secs(1));
     println!("processing 1...");
