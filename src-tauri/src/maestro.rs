@@ -56,7 +56,7 @@ pub fn start_maestro(app_handle: AppHandle) {
     let addr = ([127, 0, 0, 1], 8080).into();
     tokio::runtime::Runtime::new()
         .unwrap()
-        .block_on(run_server(addr, http_server));
+        .spawn(run_server(addr, http_server));
 
     println!("everythin started");
 
