@@ -4,6 +4,7 @@
 mod maestro;
 mod server;
 mod watcher;
+mod exported;
 
 use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
 use tauri_plugin_positioner::{Position, WindowExt};
@@ -75,6 +76,7 @@ fn main() {
                 _ => {}
             }
         })
+        .invoke_handler(tauri::generate_handler![exported::create_json_string])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

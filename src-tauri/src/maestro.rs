@@ -113,7 +113,7 @@ fn do_pok_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
     open_window(app_handle);
 
     println!("Will start a Pokemon actions");
-    thread::sleep(Duration::from_secs(2));
+    thread::sleep(Duration::from_secs(1));
     println!("emitting event");
     app_handle.emit_all(
         "push",
@@ -131,10 +131,22 @@ fn do_pok_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
         thread::sleep(Duration::from_millis(1));
         println!("processing 3...");
 
-        let output = OutputData {
-            status_code: data.value,
-            status_message: data.message.clone(),
-        };
+        let payload = event.payload();
+        let output;
+
+        if let Some(p) = payload {
+            println!("---- data frontend: {:#?}", p);
+            output = OutputData {
+                status_code: 1,
+                status_message: p.to_string(),
+            }
+        } else {
+            output = OutputData {
+                status_code: data.value,
+                status_message: data.message.clone(),
+            };
+        }
+
         sender.send(output).unwrap();
         hide_window(&app_handle_clone);
     });
