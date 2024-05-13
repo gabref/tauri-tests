@@ -45,7 +45,7 @@ pub fn start_maestro(app_handle: AppHandle) {
     let maestro_sender_input = Arc::new(Mutex::new(maestro_sender_input));
     let maestro_output_r = Arc::new(Mutex::new(maestro_output_r));
 
-    let file_watcher = FileWatcher::new("/home/gabre/work".to_string(), maestro_sender.clone());
+    let file_watcher = FileWatcher::new("C:\\Users\\codec\\Documents\\embed".to_string(), maestro_sender.clone());
     file_watcher.start_watching();
 
     let http_server = HttpServer::new(
