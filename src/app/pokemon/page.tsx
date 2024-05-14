@@ -48,8 +48,9 @@ export default function Pokemon() {
 				setLastData(state);
 				setRandomString(state.id + ' ' + state.name)
 			}
+			console.log('FOR AWAIT ENDED');
 			await new Promise(resolve => setTimeout(resolve, 3000));
-			console.log('CLOSING WINDOW');
+			console.log('3S, CLOSING WINDOW');
 			if (lastStateInScope != null)
 				emit('close', { lastStateInScope });
 			else
