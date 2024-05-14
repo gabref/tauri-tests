@@ -16,7 +16,7 @@ use crate::{
 
 pub enum Operations {
     Pix,
-    Tef,
+    Waifu,
     Pokemon,
 }
 
@@ -83,6 +83,18 @@ fn start_maestro_thread(app_handle: AppHandle) {
             Ok(operation) => {
                 println!("got operation, stop all threads, and do action");
                 match operation {
+                    Operations::Waifu => match maestro_receiver_input.recv() {
+                        Ok(data) => {
+                            do_waifu_op(data, maestro_output_s.clone(), &app_handle);
+                        }
+                        Err(_) => {
+                            println!("Error occurred in maestro receiver input");
+                            break;
+                        }
+                    },
+                    _ => {
+                        println!("Other actions");
+                    }
                     Operations::Pokemon => match maestro_receiver_input.recv() {
                         Ok(data) => {
                             do_pok_op(data, maestro_output_s.clone(), &app_handle);

@@ -132,6 +132,19 @@ impl HttpServer {
         req: Request<hyper::body::Incoming>,
     ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
         match (req.method(), req.uri().path()) {
+            (&Method::GET, "/wai") => {
+                println!("got request to /wai");
+                let is_processing = self.is_processing.lock().unwrap();
+                println!("is_processing: {:#?}", *is_processing);
+                if *is_processing == true {
+                    return self.maestro_busy();
+                }
+                println!("Starting operation");
+                self.start_operation(Operations::Waifu);
+                // TODO: parse the input and start transaction
+                self.parse_data();
+                self.operation_started(is_processing)
+            }
             (&Method::GET, "/start") => {
                 println!("got request to /start");
                 let is_processing = self.is_processing.lock().unwrap();
