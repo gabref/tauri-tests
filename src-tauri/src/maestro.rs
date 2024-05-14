@@ -39,6 +39,7 @@ fn open_window(app_handle: &AppHandle) {
 
 fn hide_window(app_handle: &AppHandle) {
     let window = app_handle.get_window("main").unwrap();
+    println!("hiding window");
     window.hide().unwrap();
 }
 
