@@ -15,7 +15,7 @@
 		  "asset": true,
 		  "assetScope": [
 			  "$APPCACHE/**",
-			  "$RESOURCE/**",
+			  "$RESOURCE/**"
 		  ]
 	  },
       "all": false,
