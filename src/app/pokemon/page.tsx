@@ -55,6 +55,7 @@ export default function Pokemon() {
 				emit('close', { lastStateInScope });
 			else
 				emit('close', { });
+			router.push("/");
 		}
 		update();
 	}, []);
