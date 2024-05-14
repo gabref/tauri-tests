@@ -25,9 +25,32 @@ export default function Waifu() {
 			// });
 
 			if (window.__TAURI__) {
-				const { appDataDir } = await import('@tauri-apps/api/path');
+				const {
+					appDataDir,
+					appCacheDir,
+					resourceDir,
+					configDir,
+					appDir,
+					cacheDir,
+					dataDir,
+					localDataDir,
+				} = await import('@tauri-apps/api/path');
 				const appDataDirPath = await appDataDir();
+				const appCacheDirPath = await appCacheDir();
+				const resourceDirPath = await resourceDir();
+				const configDirPath = await configDir();
+				const appDirPath = await appDir();
+				const cacheDirPath = await cacheDir();
+				const dataDirPath = await dataDir();
+				const localDataDirPath = await localDataDir();
 				console.log('appdataDirPath', appDataDirPath);
+				console.log('appCacheDirPath', appCacheDirPath);
+				console.log('resourceDirPath', resourceDirPath);
+				console.log('configDirPath', configDirPath);
+				console.log('appDirPath', appDirPath);
+				console.log('cacheDirPath', cacheDirPath);
+				console.log('dataDirPath', dataDirPath);
+				console.log('localDataDirPath', localDataDirPath);
 			}
 		}
 		getImages();
