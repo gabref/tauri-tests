@@ -13,6 +13,7 @@ export default function Home() {
 
 	useEffect(() => {
 		const unlisten = async() => await listen('push', event => {
+			console.log('event', {event} );
 			const { payload } = event.payload as { payload: Payload };
 			console.log('payload', { payload });
 			router.push(payload.to_page);
