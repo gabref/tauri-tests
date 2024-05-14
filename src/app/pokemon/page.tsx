@@ -42,11 +42,17 @@ export default function Pokemon() {
 
 	useEffect(() => {
 		const update = async () => {
+			let lastStateInScope;
 			for await (const state of appState) {
+				lastStateInScope = state;
 				setLastData(state);
 				setRandomString(state.id + ' ' + state.name)
 			}
 			await new Promise(resolve => setTimeout(resolve, 3000));
+			if (lastStateInScope != null)
+				emit('close', { lastStateInScope });
+			else
+				emit('close', { });
 		}
 		update();
 	}, []);
