@@ -107,7 +107,7 @@ fn start_maestro_thread(app_handle: AppHandle) {
 
 #[derive(Clone, serde::Serialize)]
 struct Payload {
-    message: String,
+    to_page: String,
 }
 
 fn do_pok_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
@@ -119,7 +119,7 @@ fn do_pok_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
     app_handle.emit_all(
         "push",
         Payload {
-            message: "this is the message".into(),
+            to_page: "/pokemon".into(),
         },
     );
 
@@ -132,6 +132,43 @@ fn do_pok_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
         thread::sleep(Duration::from_millis(1));
         println!("processing 3...");
 
+        let payload = event.payload();
+        let output;
+
+        if let Some(p) = payload {
+            println!("---- data frontend: {:#?}", p);
+            output = OutputData {
+                status_code: 1,
+                status_message: p.to_string(),
+            }
+        } else {
+            output = OutputData {
+                status_code: data.value,
+                status_message: data.message.clone(),
+            };
+        }
+
+        sender.send(output).unwrap();
+        hide_window(&app_handle_clone);
+    });
+}
+
+fn do_waifu_op(data: Data, sender: Sender<OutputData>, app_handle: &AppHandle) {
+    open_window(app_handle);
+
+    println!("Will start a Pokemon actions");
+    thread::sleep(Duration::from_secs(1));
+    println!("emitting event");
+    app_handle.emit_all(
+        "push",
+        Payload {
+            to_page: "waifu".into(),
+        },
+    );
+
+    let app_handle_clone = app_handle.clone();
+
+    app_handle.listen_global("close", move |event| {
         let payload = event.payload();
         let output;
 
