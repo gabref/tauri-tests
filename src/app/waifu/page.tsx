@@ -51,6 +51,14 @@ export default function Waifu() {
 				console.log('cacheDirPath', cacheDirPath);
 				console.log('dataDirPath', dataDirPath);
 				console.log('localDataDirPath', localDataDirPath);
+				// appdataDirPath 	C: \Users\codec\AppData\Roaming\com.tauri.dev\
+				// appCacheDirPath 	C: \Users\codec\AppData\Local\com.tauri.dev\
+				// resourceDirPath 	C: \Users\codec\Documents\embed\tauri - tests\src - tauri\target\debug\
+				// configDirPath 	C: \Users\codec\AppData\Roaming\
+				// appDirPath 		C: \Users\codec\AppData\Roaming\com.tauri.dev\
+				// cacheDirPath 	C: \Users\codec\AppData\Local\
+				// dataDirPath 		C: \Users\codec\AppData\Roaming\
+				// localDataDirPath C: \Users\codec\AppData\Local\
 			}
 		}
 		getImages();
