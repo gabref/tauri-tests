@@ -40,9 +40,11 @@ When you start the application with `cargo tauri dev`, if in the developer conso
 
 **Server**
 You can start the application with:
-curl localhost:8080/start   -> will start a window that shows random info, and then closes
-curl localhost:8080/wai     -> start a window, waits for user interaction, user has to close the window
-curl localhost:8080/status  -> shows the status of the last transaction
+```bash
+curl localhost:8080/start   # will start a window that shows random info, and then closes
+curl localhost:8080/wai     # start a window, waits for user interaction, user has to close the window
+curl localhost:8080/status  # shows the status of the last transaction
+```
 
 ## TODOs
 
