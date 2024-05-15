@@ -12,14 +12,31 @@
   "tauri": {
     "allowlist": {
 	  "path": {
-		  "all": true
+		  "all": true,
+		  "scope": [
+			  "$APPDATA",
+			  "$APPDATA/*",
+			  "$APPDATA/**",
+			  "$APPCACHE/**",
+			  "$RESOURCE/**"
+		  ]
 	  },
 	  "fs": {
-		  "all": true
+		  "all": true,
+		  "scope": [
+			  "$APPDATA",
+			  "$APPDATA/*",
+			  "$APPDATA/**",
+			  "$APPCACHE/**",
+			  "$RESOURCE/**"
+		  ]
 	  },
 	  "protocol": {
 		  "asset": true,
 		  "assetScope": [
+			  "$APPDATA",
+			  "$APPDATA/*",
+			  "$APPDATA/**",
 			  "$APPCACHE/**",
 			  "$RESOURCE/**"
 		  ]
