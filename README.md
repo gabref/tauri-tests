@@ -29,6 +29,9 @@ The maestro thread will start the monitoring threads (server && file watcher). A
 
 ## Architecture
 
+![image](https://github.com/gabref/tauri-tests/assets/83483325/5b600c05-ae44-4647-b260-5b90131bf08b)
+
+
 ## TODOs
 
 menu -> system tray and on app opened
