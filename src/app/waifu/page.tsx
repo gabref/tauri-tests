@@ -1,5 +1,6 @@
 'use client';
 
+import { ImageCache } from '@/components/image-cache';
 // import { appDataDir } from '@tauri-apps/api/path';
 // import { readDir } from '@tauri-apps/api/fs';
 // import { convertFileSrc } from '@tauri-apps/api/tauri'
@@ -67,6 +68,7 @@ export default function Waifu() {
 	return (
 		<>
 			<h1>Waifu page</h1>
+			<ImageCache src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2hbIcDk3CW68fGvPBrpFUnz9BSMsaWm0gj8Y_mg_qlg&s" className="w-8" />
 			<button onClick={handleClick} className="bg-green-300 rounded-s" >Run</button>
 		</>
 	)
